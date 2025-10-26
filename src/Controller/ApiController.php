@@ -1,37 +1,67 @@
 <?php
-
 namespace App\Controller;
 
+use App\Entity\Item;
 use App\Repository\ItemRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api')]
 class ApiController
 {
-    #[Route('/health', methods: ['GET'])]
-    public function health(): JsonResponse
+//    #[Route('/items', methods: ['GET'])]
+//    public function items(ItemRepository $repo): JsonResponse
+//    {
+//        $items = $repo->findBy([], ['id' => 'DESC']);
+//        $data = array_map(fn(Item $i) => [
+//            'id' => $i->getId(),
+//            'name' => $i->getName(),
+//            'category' => $i->getCategory(),
+//            'location' => $i->getLocation(),
+//            'person' => $i->getPerson(),
+//            'purchaseDate' => $i->getPurchaseDate(),
+//            'notes' => $i->getNotes(),
+//        ], $items);
+//
+//        return new JsonResponse($data);
+//    }
+
+    // ⬇️ NEU: POST /api/items
+    #[Route('/items', methods: ['POST'])]
+    public function createItem(Request $request, EntityManagerInterface $em): JsonResponse
     {
-        return new JsonResponse(['status' => 'ok']);
-    }
+        $data = json_decode($request->getContent(), true);
+        if (!is_array($data)) {
+            return new JsonResponse(['error' => 'Invalid JSON'], 400);
+        }
 
-    #[Route('/items', methods: ['GET'])]
-    public function items(ItemRepository $repo): JsonResponse
-    {
-        $items = $repo->findBy([], ['id' => 'DESC']);
+        foreach (['name','category','location','purchaseDate'] as $f) {
+            if (!array_key_exists($f, $data) || $data[$f] === '') {
+                return new JsonResponse(['error' => "Missing field: $f"], 400);
+            }
+        }
 
-        $data = array_map(function ($i) {
-            return [
-                'id' => $i->getId(),
-                'name' => $i->getName(),
-                'category' => $i->getCategory(),
-                'location' => $i->getLocation(),
-                'person' => $i->getPerson(),
-                'purchaseDate' => $i->getPurchaseDate(),
-                'notes' => $i->getNotes(),
-            ];
-        }, $items);
+        $item = new Item();
+        $item->setName((string)$data['name']);
+        $item->setCategory((string)$data['category']);
+        $item->setLocation((string)$data['location']);
+        $item->setPerson($data['person'] ?? null);
+        $item->setPurchaseDate((int)$data['purchaseDate']);
+        $item->setNotes($data['notes'] ?? null);
 
-        return new JsonResponse($data);
+        $em->persist($item);
+        $em->flush();
+
+        return new JsonResponse([
+            'id' => $item->getId(),
+            'name' => $item->getName(),
+            'category' => $item->getCategory(),
+            'location' => $item->getLocation(),
+            'person' => $item->getPerson(),
+            'purchaseDate' => $item->getPurchaseDate(),
+            'notes' => $item->getNotes(),
+        ], 201);
     }
 }
