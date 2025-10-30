@@ -11,24 +11,26 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api')]
 class ApiController
 {
-//    #[Route('/items', methods: ['GET'])]
-//    public function items(ItemRepository $repo): JsonResponse
-//    {
-//        $items = $repo->findBy([], ['id' => 'DESC']);
-//        $data = array_map(fn(Item $i) => [
-//            'id' => $i->getId(),
-//            'name' => $i->getName(),
-//            'category' => $i->getCategory(),
-//            'location' => $i->getLocation(),
-//            'person' => $i->getPerson(),
-//            'purchaseDate' => $i->getPurchaseDate(),
-//            'notes' => $i->getNotes(),
-//        ], $items);
-//
-//        return new JsonResponse($data);
-//    }
+    // GET /api/items  →Item Liste laden
+    #[Route('/items', methods: ['GET'])]
+    public function loadItems(ItemRepository $repo): JsonResponse
+    {
+        $items = $repo->findBy([], ['id' => 'DESC']);
 
-    // ⬇️ NEU: POST /api/items
+        $data = array_map(fn(Item $i) => [
+            'id' => $i->getId(),
+            'name' => $i->getName(),
+            'category' => $i->getCategory(),
+            'location' => $i->getLocation(),
+            'person' => $i->getPerson(),
+            'purchaseDate' => $i->getPurchaseDate(),
+            'notes' => $i->getNotes(),
+        ], $items);
+
+        return new JsonResponse($data);
+    }
+
+    // POST /api/items → neues Item anlegen
     #[Route('/items', methods: ['POST'])]
     public function createItem(Request $request, EntityManagerInterface $em): JsonResponse
     {
